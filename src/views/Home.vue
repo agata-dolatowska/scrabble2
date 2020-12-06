@@ -1,6 +1,8 @@
 <template lang="pug">
-  div.board-container
-    <Square v-for="square in squares" :key="square.id" :square="square" />
+  div
+    div.board-container
+      <Square v-for="square in squares" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter"/>
+    button(@click="checkWord") check word
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -19,9 +21,41 @@ import Square from '@/components/Square.vue'
 })
 export default class Board extends Vue {
   private squares: SquareModel[] = []
+  private currentWord: SquareModel[] = []
+  private maxWordLength = 7
+  private wordCount = 0
 
   mounted () {
     this.createSquares()
+
+    if (this.wordCount === 0) {
+      this.unblockSquaresForStart()
+    }
+  }
+
+  checkWord () {
+    if (this.wordCount === 0) {
+      const middleSquareId = this.squares.findIndex(square => square.column === 8 && square.column === 8)
+      if (this.squares[middleSquareId].letter === '') {
+        console.log('pusteee')
+      }
+    }
+  }
+
+  unblockSquaresForStart () {
+    let squareId = 0
+
+    for (let columnNumber = 2; columnNumber <= 14; columnNumber += 1) {
+      squareId = this.squares.findIndex(square => square.row === 8 && square.column === columnNumber)
+
+      this.squares[squareId].isDisabled = false
+    }
+
+    for (let rowNumber = 2; rowNumber <= 14; rowNumber += 1) {
+      squareId = this.squares.findIndex(square => square.row === rowNumber && square.column === 8)
+
+      this.squares[squareId].isDisabled = false
+    }
   }
 
   createSquares () {
@@ -35,7 +69,7 @@ export default class Board extends Vue {
 
     for (let rowNumber = 1; rowNumber <= 15; rowNumber += 1) {
       for (let columnNumber = 1; columnNumber <= 15; columnNumber += 1) {
-        this.squares.push(new SquareModel(`${(rowNumber + 9).toString(36)}${columnNumber}`, columnNumber, rowNumber))
+        this.squares.push(new SquareModel(`${(rowNumber + 9).toString(36)}${columnNumber}`, rowNumber, columnNumber))
       }
     }
 
@@ -48,6 +82,24 @@ export default class Board extends Vue {
         }
       }
     }
+  }
+
+  addLetterToWord (newLetter: SquareModel) {
+    const letterId = this.currentWord.findIndex(letter => letter.id === newLetter.id)
+
+    if (letterId >= 0 && this.currentWord.length < this.maxWordLength) {
+      this.currentWord[letterId] = newLetter
+    }
+
+    if (letterId === -1 && this.currentWord.length < this.maxWordLength) {
+      this.currentWord.push(newLetter)
+    }
+  }
+
+  removeEmptyLetter (letterToDelete: SquareModel) {
+    const letterId = this.currentWord.findIndex(letter => letter.id === letterToDelete.id)
+
+    this.currentWord.splice(letterId, 1)
   }
 }
 </script>
