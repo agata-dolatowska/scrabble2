@@ -34,11 +34,165 @@ export default class Board extends Vue {
   }
 
   checkWord () {
+    const wordIsHorizontal = this.wordHorizontal()
+    const wordIsVertical = this.wordVertical()
+    let wordOk = true
+
     if (this.wordCount === 0) {
-      const middleSquareId = this.squares.findIndex(square => square.column === 8 && square.column === 8)
-      if (this.squares[middleSquareId].letter === '') {
+      const middleSquareId = this.currentWord.findIndex(square => square.column === 8 && square.column === 8)
+      if (this.currentWord[middleSquareId].letter === '') {
         console.log('pusteee')
+        wordOk = false
       }
+
+      if (this.currentWord.length < 2) {
+        console.log('za krótkie słowo')
+        wordOk = false
+      }
+
+      if (this.currentWord.length > 7) {
+        console.log('za długie')
+        wordOk = false
+      }
+    } else {
+      console.log('chociaż jedna literka :<')
+      wordOk = false
+    }
+
+    if ((wordIsHorizontal &&
+    wordIsVertical) ||
+    (!wordIsHorizontal &&
+    !wordIsVertical)
+    ) {
+      console.log('porozrzucane :<')
+      wordOk = false
+    }
+
+    this.correctLettersOrder(wordIsHorizontal, wordIsVertical)
+
+    if (this.checkGaps(wordIsHorizontal, wordIsVertical)) {
+      wordOk = false
+    }
+
+    if (wordOk) {
+      let squareId: number
+
+      for (const letter of this.currentWord) {
+        squareId = this.squares.findIndex(square =>
+          square.row === letter.row && square.column === letter.column)
+        this.squares[squareId].letter = letter.letter
+      }
+    }
+
+    this.currentWord = []
+    this.blockAllSquares()
+    this.unblockSquares()
+  }
+
+  checkGaps (horizontal: boolean, vertical: boolean): boolean {
+    let currentId = 0
+
+    if (horizontal) {
+      this.currentWord.forEach((letter, letterId) => {
+        if (letterId === 0) {
+          currentId = letter.column
+        } else {
+          if (letter.column === currentId + 1) {
+            currentId++
+          } else {
+            console.log('dziura')
+            return true
+          }
+        }
+      })
+    }
+
+    if (vertical) {
+      this.currentWord.forEach((letter, letterId) => {
+        if (letterId === 0) {
+          currentId = letter.row
+        } else {
+          if (letter.row === currentId + 1) {
+            currentId++
+          } else {
+            console.log('dziura')
+            return true
+          }
+        }
+      })
+    }
+
+    return false
+  }
+
+  correctLettersOrder (horizontal: boolean, vertical: boolean) {
+    if (horizontal) {
+      this.currentWord.sort((letterA, letterB) => letterA.column - letterB.column)
+    }
+
+    if (vertical) {
+      this.currentWord.sort((letterA, letterB) => letterA.row - letterB.row)
+    }
+  }
+
+  wordHorizontal () {
+    let isHorizontal = true
+    const rowNumber = this.currentWord[0].row
+
+    for (const letter of this.currentWord) {
+      if (letter.row !== rowNumber) {
+        isHorizontal = false
+      }
+    }
+
+    return isHorizontal
+  }
+
+  wordVertical () {
+    let isVertical = true
+    const columnNumber = this.currentWord[0].column
+
+    for (const letter of this.currentWord) {
+      if (letter.column !== columnNumber) {
+        isVertical = false
+      }
+    }
+
+    return isVertical
+  }
+
+  unblockSquares () {
+    let nextRowItemId = 0
+
+    for (const squareId in this.squares) {
+      for (let i = -7; i <= 7; i++) {
+        if (this.squares[parseInt(squareId)].letter !== '' &&
+          parseInt(squareId) + i < this.squares.length - 1 &&
+          parseInt(squareId) + i >= 0) {
+          if (this.squares[parseInt(squareId) + i].letter === '' &&
+            this.squares[parseInt(squareId)].row === this.squares[parseInt(squareId) + i].row
+          ) {
+            this.squares[parseInt(squareId) + i].isDisabled = false
+          }
+        }
+
+        nextRowItemId = this.squares.findIndex(square => square.column === this.squares[squareId].column && square.row === this.squares[squareId].row + i)
+
+        if (this.squares[parseInt(squareId)].letter !== '' &&
+          nextRowItemId >= 0) {
+          if (this.squares[nextRowItemId].letter === '' &&
+            this.squares[parseInt(squareId)].column === this.squares[nextRowItemId].column
+          ) {
+            this.squares[nextRowItemId].isDisabled = false
+          }
+        }
+      }
+    }
+  }
+
+  blockAllSquares () {
+    for (const square of this.squares) {
+      square.isDisabled = true
     }
   }
 

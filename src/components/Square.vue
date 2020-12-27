@@ -1,5 +1,5 @@
 <template lang="pug">
-  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="currentSquare.isDisabled" @input="changeLetter")
+  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="square.isDisabled" @input="changeLetter")
 </template>
 <script lang="ts">
 import Vue from 'vue'
