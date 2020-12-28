@@ -50,7 +50,7 @@ export default class Board extends Vue {
         wordOk = false
       }
 
-      if (this.currentWord.length > 7) {
+      if (this.currentWord.length > this.maxWordLength) {
         console.log('za długie')
         wordOk = false
       }
@@ -82,15 +82,35 @@ export default class Board extends Vue {
           square.row === letter.row && square.column === letter.column)
         this.squares[squareId].letter = letter.letter
       }
+
+      this.wordCount++
+    } else {
+      this.removeWordFromBoard()
     }
 
     this.currentWord = []
     this.blockAllSquares()
-    this.unblockSquares()
+
+    if (this.wordCount === 0) {
+      this.unblockSquaresForStart()
+    } else {
+      this.unblockSquares()
+    }
+  }
+
+  removeWordFromBoard (): void {
+    let squareId = 0
+
+    for (const squareInWord of this.currentWord) {
+      squareId = this.squares.findIndex(square => square.row === squareInWord.row && square.column === squareInWord.column)
+
+      this.squares[squareId].letter = ''
+    }
   }
 
   checkGaps (horizontal: boolean, vertical: boolean): boolean {
     let currentId = 0
+    let hasGaps = false
 
     if (horizontal) {
       this.currentWord.forEach((letter, letterId) => {
@@ -101,7 +121,7 @@ export default class Board extends Vue {
             currentId++
           } else {
             console.log('dziura')
-            return true
+            hasGaps = true
           }
         }
       })
@@ -116,13 +136,13 @@ export default class Board extends Vue {
             currentId++
           } else {
             console.log('dziura')
-            return true
+            hasGaps = true
           }
         }
       })
     }
 
-    return false
+    return hasGaps
   }
 
   correctLettersOrder (horizontal: boolean, vertical: boolean) {
@@ -163,25 +183,28 @@ export default class Board extends Vue {
 
   unblockSquares () {
     let nextRowItemId = 0
+    let squareIdParsed = 0
 
     for (const squareId in this.squares) {
-      for (let i = -7; i <= 7; i++) {
-        if (this.squares[parseInt(squareId)].letter !== '' &&
-          parseInt(squareId) + i < this.squares.length - 1 &&
-          parseInt(squareId) + i >= 0) {
-          if (this.squares[parseInt(squareId) + i].letter === '' &&
-            this.squares[parseInt(squareId)].row === this.squares[parseInt(squareId) + i].row
+      squareIdParsed = parseInt(squareId)
+
+      for (let i = -this.maxWordLength; i <= this.maxWordLength; i++) {
+        if (this.squares[squareIdParsed].letter !== '' &&
+          squareIdParsed + i < this.squares.length - 1 &&
+          squareIdParsed + i >= 0) {
+          if (this.squares[squareIdParsed + i].letter === '' &&
+            this.squares[squareIdParsed].row === this.squares[squareIdParsed + i].row
           ) {
-            this.squares[parseInt(squareId) + i].isDisabled = false
+            this.squares[squareIdParsed + i].isDisabled = false
           }
         }
 
         nextRowItemId = this.squares.findIndex(square => square.column === this.squares[squareId].column && square.row === this.squares[squareId].row + i)
 
-        if (this.squares[parseInt(squareId)].letter !== '' &&
+        if (this.squares[squareIdParsed].letter !== '' &&
           nextRowItemId >= 0) {
           if (this.squares[nextRowItemId].letter === '' &&
-            this.squares[parseInt(squareId)].column === this.squares[nextRowItemId].column
+            this.squares[squareIdParsed].column === this.squares[nextRowItemId].column
           ) {
             this.squares[nextRowItemId].isDisabled = false
           }

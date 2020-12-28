@@ -11,7 +11,7 @@ import SquareModel from '@/models/Square'
 export default class Square extends Vue {
   @Prop({ required: true }) square!: SquareModel
 
-  currentSquare = JSON.parse(JSON.stringify(this.square))
+  currentSquare = this.square
 
   changeLetter () {
     if (/^[a-zA-Z]$/.test(this.currentSquare.letter)) {
