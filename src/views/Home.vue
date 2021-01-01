@@ -8,6 +8,7 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
 import SquareModel from '@/models/Square'
+import WordModel from '@/models/Word'
 import doubleLetterSquares from '@/game-assets/board-squares/double-letter'
 import doubleWordSquares from '@/game-assets/board-squares/double-word'
 import tripleLetterSquares from '@/game-assets/board-squares/triple-letter'
@@ -22,6 +23,7 @@ import Square from '@/components/Square.vue'
 export default class Board extends Vue {
   private squares: SquareModel[] = []
   private currentWord: SquareModel[] = []
+  private savedWords: WordModel[] = []
   private currentWordOrientation = ''
   private maxTypedLetters = 7
   private wordCount = 0
@@ -37,29 +39,10 @@ export default class Board extends Vue {
   checkWord () {
     let wordOk = true
 
-    if (this.wordCount === 0) {
-      const middleSquareId = this.currentWord.findIndex(square => square.column === 8 && square.column === 8)
-      if (this.currentWord[middleSquareId].letter === '') {
-        console.log('pusteee')
-        wordOk = false
-      }
+    this.wordLengthCheck()
 
-      if (this.currentWord.length < 2) {
-        console.log('za krótkie słowo')
-        wordOk = false
-      }
-
-      if (this.currentWord.length > this.maxTypedLetters) {
-        console.log('za długie')
-        wordOk = false
-      }
-    } else {
-      console.log('chociaż jedna literka :<')
+    if (!this.wordOrientationCorrect()) {
       wordOk = false
-    }
-
-    if (!this.wordOrientation()) {
-      console.log('porozrzucane :<')
     }
 
     this.correctLettersOrder()
@@ -71,20 +54,16 @@ export default class Board extends Vue {
     this.correctLettersOrder()
 
     if (wordOk) {
-      let squareId: number
+      const wordId = this.savedWords.length
 
-      for (const letter of this.currentWord) {
-        squareId = this.squares.findIndex(square =>
-          square.row === letter.row && square.column === letter.column)
-        this.squares[squareId].letter = letter.letter
-      }
+      this.savedWords.push(new WordModel(wordId, this.currentWord))
 
       this.wordCount++
     } else {
-      // this.removeWordFromBoard()
+      this.removeWordFromBoard()
     }
 
-    // this.currentWord = []
+    this.currentWord = []
 
     this.blockAllSquares()
 
@@ -97,12 +76,48 @@ export default class Board extends Vue {
 
   removeWordFromBoard (): void {
     let squareId = 0
+    let squareUsed = false
 
     for (const squareInWord of this.currentWord) {
-      squareId = this.squares.findIndex(square => square.row === squareInWord.row && square.column === squareInWord.column)
+      squareUsed = this.savedWords.some(word =>
+        word.letters.some(letter => letter.row === squareInWord.row && letter.column === squareInWord.column)
+      )
 
-      this.squares[squareId].letter = ''
+      if (!squareUsed) {
+        squareId = this.squares.findIndex(square => square.row === squareInWord.row && square.column === squareInWord.column)
+
+        this.squares[squareId].letter = ''
+      }
     }
+  }
+
+  wordLengthCheck (): boolean {
+    let wordOk = true
+    const middleSquareId = this.squares.findIndex(square => square.column === 8 && square.column === 8)
+
+    if (this.wordCount === 0) {
+      if (this.squares[middleSquareId].letter === '') {
+        console.log('puste środkowe pole')
+        wordOk = false
+      }
+
+      if (this.currentWord.length < 2) {
+        console.log('za krótkie słowo')
+        wordOk = false
+      }
+    }
+
+    if (this.currentWord.length > this.maxTypedLetters) {
+      console.log('za długie')
+      wordOk = false
+    }
+
+    if (this.wordCount > 0 && this.currentWord.length < 1) {
+      console.log('chociaż jedna literka :<')
+      wordOk = false
+    }
+
+    return wordOk
   }
 
   checkGaps (): boolean {
@@ -162,7 +177,7 @@ export default class Board extends Vue {
     }
   }
 
-  wordOrientation (): boolean {
+  wordOrientationCorrect (): boolean {
     const wordIsHorizontal = this.wordHorizontal()
     const wordIsVertical = this.wordVertical()
     let wordOrientationOk = true
@@ -175,6 +190,7 @@ export default class Board extends Vue {
       this.currentWordOrientation = 'vertical'
     }
 
+    console.log('vertical', wordIsVertical, 'horizontal', wordIsHorizontal)
     if ((wordIsHorizontal && wordIsVertical) ||
     (!wordIsHorizontal && !wordIsVertical)
     ) {
