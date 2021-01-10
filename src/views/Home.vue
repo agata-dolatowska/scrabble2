@@ -47,12 +47,15 @@ export default class Board extends Vue {
 
     this.correctLettersOrder()
 
+    this.checkWordBeginning()
+
+    this.checkWordEnding()
+
     if (this.checkGaps()) {
       wordOk = false
     }
 
     this.correctLettersOrder()
-
     if (wordOk) {
       const wordId = this.savedWords.length
 
@@ -93,7 +96,7 @@ export default class Board extends Vue {
 
   wordLengthCheck (): boolean {
     let wordOk = true
-    const middleSquareId = this.squares.findIndex(square => square.column === 8 && square.column === 8)
+    const middleSquareId = this.squares.findIndex(square => square.column === 8 && square.row === 8)
 
     if (this.wordCount === 0) {
       if (this.squares[middleSquareId].letter === '') {
@@ -120,41 +123,71 @@ export default class Board extends Vue {
     return wordOk
   }
 
+  checkWordBeginning (): void {
+    const firstLetterId = this.squares.findIndex(square => square.id === this.currentWord[0].id)
+    let letterId = firstLetterId
+
+    if (this.currentWordOrientation === 'horizontal') {
+      letterId -= 1
+
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === this.currentWord[0].row && letterId >= 0; letterId -= 1) {
+        this.currentWord.unshift(this.squares[letterId])
+      }
+    }
+
+    if (this.currentWordOrientation === 'vertical') {
+      letterId -= 15
+
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === this.currentWord[0].column && letterId >= 0; letterId -= 15) {
+        this.currentWord.unshift(this.squares[letterId])
+      }
+    }
+  }
+
+  checkWordEnding (): void {
+    const lastLetterId = this.squares.findIndex(square => square.id === this.currentWord[this.currentWord.length - 1].id)
+    let letterId = lastLetterId
+
+    if (this.currentWordOrientation === 'horizontal') {
+      letterId = lastLetterId + 1
+
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === this.currentWord[this.currentWord.length - 1].row && letterId <= this.squares.length - 1; letterId += 1) {
+        this.currentWord.push(this.squares[letterId])
+      }
+    }
+
+    if (this.currentWordOrientation === 'vertical') {
+      letterId = lastLetterId + 15
+
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === this.currentWord[this.currentWord.length - 1].column && letterId <= this.squares.length - 1; letterId += 15) {
+        this.currentWord.push(this.squares[letterId])
+      }
+    }
+  }
+
   checkGaps (): boolean {
     let hasGaps = false
-    let squareIdInCollection = 0
+    let letterUsedInWord = false
     const squaresToAdd: SquareModel[] = []
+    const firstLetterId = this.squares.findIndex(letter => letter === this.currentWord[0])
+    const lastLetterId = this.squares.findIndex(letter => letter === this.currentWord[this.currentWord.length - 1])
+    const nextId = this.currentWordOrientation === 'horizontal' ? 1 : 15
 
-    for (let letterId = 0; letterId < this.currentWord.length - 1; letterId += 1) {
-      if (this.nextLetterEmpty(letterId)) {
-        squareIdInCollection = this.nextSquareId(letterId)
+    for (let letterId = firstLetterId; letterId < lastLetterId; letterId += nextId) {
+      letterUsedInWord = this.currentWord.some(letter => letter.id === this.squares[letterId].id)
 
-        if (squareIdInCollection >= 0 && this.squares[squareIdInCollection].letter !== '') {
-          squaresToAdd.push(this.squares[squareIdInCollection])
-        } else {
-          hasGaps = true
-        }
+      if (this.squares[letterId].letter !== '' && !letterUsedInWord
+      ) {
+        squaresToAdd.push(this.squares[letterId])
+      }
+
+      if (this.squares[letterId].letter === '' && !letterUsedInWord) {
+        hasGaps = true
       }
     }
 
     this.currentWord.push(...squaresToAdd)
     return hasGaps
-  }
-
-  nextLetterEmpty (letterId: number): boolean {
-    let isEmpty = false
-
-    if (this.currentWordOrientation === 'horizontal' &&
-    this.currentWord[letterId + 1].column - this.currentWord[letterId].column !== 1) {
-      isEmpty = true
-    }
-
-    if (this.currentWordOrientation === 'vertical' &&
-      this.currentWord[letterId + 1].row - this.currentWord[letterId].row !== 1) {
-      isEmpty = true
-    }
-
-    return isEmpty
   }
 
   nextSquareId (letterId: number): number {
@@ -311,7 +344,7 @@ export default class Board extends Vue {
   addLetterToWord (newLetter: SquareModel): void {
     const letterId = this.currentWord.findIndex(letter => letter.id === newLetter.id)
 
-    if (letterId >= 0 && this.currentWord.length < this.maxTypedLetters) {
+    if (letterId >= 0) {
       this.currentWord[letterId] = newLetter
     }
 
