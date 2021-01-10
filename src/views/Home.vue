@@ -55,6 +55,10 @@ export default class Board extends Vue {
       wordOk = false
     }
 
+    if (!this.crossedWord()) {
+      wordOk = false
+    }
+
     this.correctLettersOrder()
     if (wordOk) {
       const wordId = this.savedWords.length
@@ -77,6 +81,24 @@ export default class Board extends Vue {
     }
   }
 
+  crossedWord (): boolean {
+    let crossedWord = !!(this.wordCount === 0)
+    const usedLetters = []
+
+    for (const word of this.savedWords) {
+      usedLetters.push(...word.letters)
+    }
+
+    for (const currentWordLetter of this.currentWord) {
+      if (usedLetters.some(letter => letter.id === currentWordLetter.id
+      )) {
+        crossedWord = true
+      }
+    }
+
+    return crossedWord
+  }
+
   removeWordFromBoard (): void {
     let squareId = 0
     let squareUsed = false
@@ -87,7 +109,7 @@ export default class Board extends Vue {
       )
 
       if (!squareUsed) {
-        squareId = this.squares.findIndex(square => square.row === squareInWord.row && square.column === squareInWord.column)
+        squareId = this.squares.findIndex(square => square.id === squareInWord.id)
 
         this.squares[squareId].letter = ''
       }
@@ -188,16 +210,6 @@ export default class Board extends Vue {
 
     this.currentWord.push(...squaresToAdd)
     return hasGaps
-  }
-
-  nextSquareId (letterId: number): number {
-    let squareIdInCollection = 0
-    const nextColumn = this.currentWordOrientation === 'horizontal' ? 1 : 0
-    const nextRow = this.currentWordOrientation === 'vertical' ? 1 : 0
-
-    squareIdInCollection = this.squares.findIndex(square => square.row === this.currentWord[letterId].row + nextRow && square.column === this.currentWord[letterId].column) + nextColumn
-
-    return squareIdInCollection
   }
 
   correctLettersOrder (): void {
@@ -348,7 +360,7 @@ export default class Board extends Vue {
       this.currentWord[letterId] = newLetter
     }
 
-    if (letterId === -1 && this.currentWord.length < this.maxTypedLetters) {
+    if (letterId === -1) {
       this.currentWord.push(newLetter)
     }
   }
