@@ -30,10 +30,6 @@ export default class Board extends Vue {
 
   mounted () {
     this.createSquares()
-
-    if (this.wordCount === 0) {
-      this.unblockSquaresForStart()
-    }
   }
 
   checkWord () {
@@ -71,14 +67,6 @@ export default class Board extends Vue {
     }
 
     this.currentWord = []
-
-    this.blockAllSquares()
-
-    if (this.wordCount === 0) {
-      this.unblockSquaresForStart()
-    } else {
-      this.unblockSquares()
-    }
   }
 
   crossedWord (): boolean {
@@ -271,60 +259,6 @@ export default class Board extends Vue {
     }
 
     return isVertical
-  }
-
-  unblockSquares (): void {
-    let nextRowItemId = 0
-    let squareIdParsed = 0
-
-    for (const squareId in this.squares) {
-      squareIdParsed = parseInt(squareId)
-
-      for (let i = -this.maxTypedLetters; i <= this.maxTypedLetters; i++) {
-        if (this.squares[squareIdParsed].letter !== '' &&
-          squareIdParsed + i < this.squares.length - 1 &&
-          squareIdParsed + i >= 0) {
-          if (this.squares[squareIdParsed + i].letter === '' &&
-            this.squares[squareIdParsed].row === this.squares[squareIdParsed + i].row
-          ) {
-            this.squares[squareIdParsed + i].isDisabled = false
-          }
-        }
-
-        nextRowItemId = this.squares.findIndex(square => square.column === this.squares[squareId].column && square.row === this.squares[squareId].row + i)
-
-        if (this.squares[squareIdParsed].letter !== '' &&
-          nextRowItemId >= 0) {
-          if (this.squares[nextRowItemId].letter === '' &&
-            this.squares[squareIdParsed].column === this.squares[nextRowItemId].column
-          ) {
-            this.squares[nextRowItemId].isDisabled = false
-          }
-        }
-      }
-    }
-  }
-
-  blockAllSquares (): void {
-    for (const square of this.squares) {
-      square.isDisabled = true
-    }
-  }
-
-  unblockSquaresForStart (): void {
-    let squareId = 0
-
-    for (let columnNumber = 2; columnNumber <= 14; columnNumber += 1) {
-      squareId = this.squares.findIndex(square => square.row === 8 && square.column === columnNumber)
-
-      this.squares[squareId].isDisabled = false
-    }
-
-    for (let rowNumber = 2; rowNumber <= 14; rowNumber += 1) {
-      squareId = this.squares.findIndex(square => square.row === rowNumber && square.column === 8)
-
-      this.squares[squareId].isDisabled = false
-    }
   }
 
   createSquares (): void {
