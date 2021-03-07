@@ -3,6 +3,7 @@
     div.board-container
       <Square v-for="square in squares" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter"/>
     button(@click="checkWord") check word
+    <Scoreboard :savedWords="savedWords"/>
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -14,10 +15,12 @@ import doubleWordSquares from '@/game-assets/board-squares/double-word'
 import tripleLetterSquares from '@/game-assets/board-squares/triple-letter'
 import tripleWordSquares from '@/game-assets/board-squares/triple-word'
 import Square from '@/components/Square.vue'
+import Scoreboard from '@/components/Scoreboard.vue'
 
 @Component({
   components: {
-    Square
+    Square,
+    Scoreboard
   }
 })
 export default class Board extends Vue {
