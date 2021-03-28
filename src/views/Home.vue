@@ -2,7 +2,7 @@
   div
     div.board-container
       <Square v-for="square in squares" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter"/>
-    button(@click="checkWord") check word
+    button(@click="checkWord" :disabled="typedWord.letters.length === 0") check word
     <Scoreboard :savedWords="savedWords"/>
 </template>
 <script lang="ts">
@@ -25,7 +25,8 @@ import Scoreboard from '@/components/Scoreboard.vue'
 })
 export default class Board extends Vue {
   private squares: SquareModel[] = []
-  private currentWord = new WordModel()
+  private typedWord = new WordModel()
+  private additionalWords: WordModel[] = []
   private savedWords: WordModel[] = []
   private maxTypedLetters = 7
   private wordCount = 0
@@ -45,29 +46,83 @@ export default class Board extends Vue {
       wordOk = false
     }
 
-    this.correctLettersOrder()
+    if (this.typedWord.letters.length > 1) {
+      this.correctLettersOrder(this.typedWord)
+    }
 
-    this.checkWordBeginning()
+    this.checkWordBeginning(this.typedWord.letters[0], this.typedWord.orientation)
 
-    this.checkWordEnding()
+    this.checkWordEnding(this.typedWord.letters[this.typedWord.letters.length - 1], this.typedWord.orientation)
 
     if (this.checkGaps()) {
       wordOk = false
     }
 
-    if (!this.crossedWord()) {
+    if (!this.crossedWord() && !this.parallelWord()) {
       wordOk = false
     }
 
-    this.correctLettersOrder()
+    if (this.typedWord.letters.length > 1) {
+      this.correctLettersOrder(this.typedWord)
+    }
+
+    this.additionalWordsCheck()
+
     if (wordOk) {
-      this.savedWords.push(this.currentWord)
+      this.savedWords.push(this.typedWord, ...this.additionalWords)
       this.wordCount++
     } else {
       this.removeWordFromBoard()
     }
 
-    this.currentWord = new WordModel()
+    this.typedWord = new WordModel()
+    this.additionalWords = []
+  }
+
+  additionalWordsCheck (): void {
+    let orientation = ''
+    let additionalWordId = 0
+
+    switch (this.typedWord.orientation) {
+      case 'horizontal':
+        orientation = 'vertical'
+        break
+      case 'vertical':
+        orientation = 'horizontal'
+        break
+    }
+
+    for (const letter in this.typedWord.letters) {
+      this.checkWordBeginning(this.typedWord.letters[letter], orientation, additionalWordId)
+      this.checkWordEnding(this.typedWord.letters[letter], orientation, additionalWordId)
+
+      if (this.additionalWords[additionalWordId] !== undefined) {
+        this.additionalWords[additionalWordId].letters.push(this.typedWord.letters[letter])
+        this.correctLettersOrder(this.additionalWords[additionalWordId])
+        additionalWordId++
+      }
+    }
+  }
+
+  parallelWord (): boolean {
+    let isParallel = false
+    let squareId = 0
+
+    for (const letter of this.typedWord.letters) {
+      squareId = this.squares.findIndex(square => square.id === letter.id)
+
+      if (this.typedWord.orientation === 'horizontal' && (this.squares[squareId + 15].letter !== '' || this.squares[squareId - 15].letter !== '')) {
+        isParallel = true
+        break
+      }
+
+      if (this.typedWord.orientation === 'vertical' && (this.squares[squareId + 1].letter !== '' || this.squares[squareId - 1].letter !== '')) {
+        isParallel = true
+        break
+      }
+    }
+
+    return isParallel
   }
 
   crossedWord (): boolean {
@@ -78,7 +133,7 @@ export default class Board extends Vue {
       usedLetters.push(...word.letters)
     }
 
-    for (const currentWordLetter of this.currentWord.letters) {
+    for (const currentWordLetter of this.typedWord.letters) {
       if (usedLetters.some(letter => letter.id === currentWordLetter.id
       )) {
         crossedWord = true
@@ -92,7 +147,7 @@ export default class Board extends Vue {
     let squareId = 0
     let squareUsed = false
 
-    for (const squareInWord of this.currentWord.letters) {
+    for (const squareInWord of this.typedWord.letters) {
       squareUsed = this.savedWords.some(word =>
         word.letters.some(letter => letter.row === squareInWord.row && letter.column === squareInWord.column)
       )
@@ -115,18 +170,18 @@ export default class Board extends Vue {
         wordOk = false
       }
 
-      if (this.currentWord.letters.length < 2) {
+      if (this.typedWord.letters.length < 2) {
         console.log('za krótkie słowo')
         wordOk = false
       }
     }
 
-    if (this.currentWord.letters.length > this.maxTypedLetters) {
+    if (this.typedWord.letters.length > this.maxTypedLetters) {
       console.log('za długie')
       wordOk = false
     }
 
-    if (this.wordCount > 0 && this.currentWord.letters.length < 1) {
+    if (this.wordCount > 0 && this.typedWord.letters.length < 1) {
       console.log('chociaż jedna literka :<')
       wordOk = false
     }
@@ -134,45 +189,81 @@ export default class Board extends Vue {
     return wordOk
   }
 
-  checkWordBeginning (): void {
-    const firstLetterId = this.squares.findIndex(square => square.id === this.currentWord.letters[0].id)
+  checkWordBeginning (firstLetter: SquareModel, orientation: string, additionalId?: number): void {
+    const firstLetterId = this.squares.findIndex(square => square.id === firstLetter.id)
+    const newAdditionalWord = new WordModel()
     let letterId = firstLetterId
 
-    if (this.currentWord.orientation === 'horizontal') {
+    if (orientation === 'horizontal') {
       letterId -= 1
 
-      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === this.currentWord.letters[0].row && letterId >= 0; letterId -= 1) {
-        this.currentWord.letters.unshift(this.squares[letterId])
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === firstLetter.row && letterId >= 0; letterId -= 1) {
+        if (additionalId !== undefined) {
+          newAdditionalWord.letters.unshift(this.squares[letterId])
+        } else {
+          this.typedWord.letters.unshift(this.squares[letterId])
+        }
       }
     }
 
-    if (this.currentWord.orientation === 'vertical') {
+    if (orientation === 'vertical') {
       letterId -= 15
 
-      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === this.currentWord.letters[0].column && letterId >= 0; letterId -= 15) {
-        this.currentWord.letters.unshift(this.squares[letterId])
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === firstLetter.column && letterId >= 0; letterId -= 15) {
+        if (additionalId !== undefined) {
+          newAdditionalWord.letters.unshift(this.squares[letterId])
+        } else {
+          this.typedWord.letters.unshift(this.squares[letterId])
+        }
       }
+    }
+
+    if (newAdditionalWord.letters.length > 0 && additionalId !== undefined) {
+      if (!this.additionalWords[additionalId]) {
+        this.additionalWords[additionalId] = new WordModel()
+      }
+
+      this.additionalWords[additionalId].letters = newAdditionalWord.letters
+      this.additionalWords[additionalId].orientation = orientation
     }
   }
 
-  checkWordEnding (): void {
-    const lastLetterId = this.squares.findIndex(square => square.id === this.currentWord.letters[this.currentWord.letters.length - 1].id)
+  checkWordEnding (lastLetter: SquareModel, orientation: string, additionalId?: number): void {
+    const lastLetterId = this.squares.findIndex(square => square.id === lastLetter.id)
+    const newAdditionalWord = new WordModel()
     let letterId = lastLetterId
 
-    if (this.currentWord.orientation === 'horizontal') {
+    if (orientation === 'horizontal') {
       letterId = lastLetterId + 1
 
-      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === this.currentWord.letters[this.currentWord.letters.length - 1].row && letterId <= this.squares.length - 1; letterId += 1) {
-        this.currentWord.letters.push(this.squares[letterId])
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === lastLetter.row && letterId <= this.squares.length - 1; letterId += 1) {
+        if (additionalId !== undefined) {
+          newAdditionalWord.letters.push(this.squares[letterId])
+        } else {
+          this.typedWord.letters.push(this.squares[letterId])
+        }
       }
     }
 
-    if (this.currentWord.orientation === 'vertical') {
+    if (orientation === 'vertical') {
       letterId = lastLetterId + 15
 
-      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === this.currentWord.letters[this.currentWord.letters.length - 1].column && letterId <= this.squares.length - 1; letterId += 15) {
-        this.currentWord.letters.push(this.squares[letterId])
+      for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === lastLetter.column && letterId <= this.squares.length - 1; letterId += 15) {
+        if (additionalId !== undefined) {
+          newAdditionalWord.letters.push(this.squares[letterId])
+        } else {
+          this.typedWord.letters.push(this.squares[letterId])
+        }
       }
+    }
+
+    if (newAdditionalWord.letters.length > 0 && additionalId !== undefined) {
+      if (!this.additionalWords[additionalId]) {
+        this.additionalWords[additionalId] = new WordModel()
+      }
+
+      this.additionalWords[additionalId].letters = newAdditionalWord.letters
+      this.additionalWords[additionalId].orientation = orientation
     }
   }
 
@@ -180,12 +271,12 @@ export default class Board extends Vue {
     let hasGaps = false
     let letterUsedInWord = false
     const squaresToAdd: SquareModel[] = []
-    const firstLetterId = this.squares.findIndex(letter => letter === this.currentWord.letters[0])
-    const lastLetterId = this.squares.findIndex(letter => letter === this.currentWord.letters[this.currentWord.letters.length - 1])
-    const nextId = this.currentWord.orientation === 'horizontal' ? 1 : 15
+    const firstLetterId = this.squares.findIndex(letter => letter === this.typedWord.letters[0])
+    const lastLetterId = this.squares.findIndex(letter => letter === this.typedWord.letters[this.typedWord.letters.length - 1])
+    const nextId = this.typedWord.orientation === 'horizontal' ? 1 : 15
 
     for (let letterId = firstLetterId; letterId < lastLetterId; letterId += nextId) {
-      letterUsedInWord = this.currentWord.letters.some(letter => letter.id === this.squares[letterId].id)
+      letterUsedInWord = this.typedWord.letters.some(letter => letter.id === this.squares[letterId].id)
 
       if (this.squares[letterId].letter !== '' && !letterUsedInWord
       ) {
@@ -197,17 +288,17 @@ export default class Board extends Vue {
       }
     }
 
-    this.currentWord.letters.push(...squaresToAdd)
+    this.typedWord.letters.push(...squaresToAdd)
     return hasGaps
   }
 
-  correctLettersOrder (): void {
-    if (this.currentWord.orientation === 'horizontal') {
-      this.currentWord.letters.sort((letterA, letterB) => letterA.column - letterB.column)
+  correctLettersOrder (word: WordModel): void {
+    if (word.orientation === 'horizontal') {
+      word.letters.sort((letterA, letterB) => letterA.column - letterB.column)
     }
 
-    if (this.currentWord.orientation === 'vertical') {
-      this.currentWord.letters.sort((letterA, letterB) => letterA.row - letterB.row)
+    if (word.orientation === 'vertical') {
+      word.letters.sort((letterA, letterB) => letterA.row - letterB.row)
     }
   }
 
@@ -216,21 +307,24 @@ export default class Board extends Vue {
     const wordIsVertical = this.wordVertical()
     let wordOrientationOk = true
 
-    if (wordIsHorizontal) {
-      this.currentWord.orientation = 'horizontal'
-    }
+    if (this.typedWord.letters.length > 0) {
+      if (wordIsHorizontal) {
+        this.typedWord.orientation = 'horizontal'
+      }
 
-    if (wordIsVertical) {
-      this.currentWord.orientation = 'vertical'
-    }
+      if (wordIsVertical) {
+        this.typedWord.orientation = 'vertical'
+      }
 
-    console.log('vertical', wordIsVertical, 'horizontal', wordIsHorizontal)
-    if ((wordIsHorizontal && wordIsVertical) ||
+      if ((wordIsHorizontal && wordIsVertical) ||
     (!wordIsHorizontal && !wordIsVertical)
-    ) {
-      this.currentWord.orientation = ''
-      console.log('porozrzucane :<')
-      wordOrientationOk = false
+      ) {
+        this.typedWord.orientation = ''
+        console.log('porozrzucane :<')
+        wordOrientationOk = false
+      }
+    } else {
+      this.typedWord.orientation = 'both'
     }
 
     return wordOrientationOk
@@ -238,9 +332,9 @@ export default class Board extends Vue {
 
   wordHorizontal (): boolean {
     let isHorizontal = true
-    const rowNumber = this.currentWord.letters[0].row
+    const rowNumber = this.typedWord.letters[0].row
 
-    for (const letter of this.currentWord.letters) {
+    for (const letter of this.typedWord.letters) {
       if (letter.row !== rowNumber) {
         isHorizontal = false
       }
@@ -251,9 +345,9 @@ export default class Board extends Vue {
 
   wordVertical (): boolean {
     let isVertical = true
-    const columnNumber = this.currentWord.letters[0].column
+    const columnNumber = this.typedWord.letters[0].column
 
-    for (const letter of this.currentWord.letters) {
+    for (const letter of this.typedWord.letters) {
       if (letter.column !== columnNumber) {
         isVertical = false
       }
@@ -289,21 +383,21 @@ export default class Board extends Vue {
   }
 
   addLetterToWord (newLetter: SquareModel): void {
-    const letterId = this.currentWord.letters.findIndex(letter => letter.id === newLetter.id)
+    const letterId = this.typedWord.letters.findIndex(letter => letter.id === newLetter.id)
 
     if (letterId >= 0) {
-      this.currentWord.letters[letterId] = newLetter
+      this.typedWord.letters[letterId] = newLetter
     }
 
     if (letterId === -1) {
-      this.currentWord.letters.push(newLetter)
+      this.typedWord.letters.push(newLetter)
     }
   }
 
   removeEmptyLetter (letterToDelete: SquareModel): void {
-    const letterId = this.currentWord.letters.findIndex(letter => letter.id === letterToDelete.id)
+    const letterId = this.typedWord.letters.findIndex(letter => letter.id === letterToDelete.id)
 
-    this.currentWord.letters.splice(letterId, 1)
+    this.typedWord.letters.splice(letterId, 1)
   }
 }
 </script>
