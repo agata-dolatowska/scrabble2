@@ -194,7 +194,7 @@ export default class Board extends Vue {
     const newAdditionalWord = new WordModel()
     let letterId = firstLetterId
 
-    if (orientation === 'horizontal') {
+    if (orientation === 'horizontal' || orientation === 'both') {
       letterId -= 1
 
       for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === firstLetter.row && letterId >= 0; letterId -= 1) {
@@ -203,10 +203,14 @@ export default class Board extends Vue {
         } else {
           this.typedWord.letters.unshift(this.squares[letterId])
         }
+
+        if (this.typedWord.orientation === 'both') {
+          this.typedWord.orientation = 'horizontal'
+        }
       }
     }
 
-    if (orientation === 'vertical') {
+    if (orientation === 'vertical' || orientation === 'both') {
       letterId -= 15
 
       for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === firstLetter.column && letterId >= 0; letterId -= 15) {
@@ -214,6 +218,10 @@ export default class Board extends Vue {
           newAdditionalWord.letters.unshift(this.squares[letterId])
         } else {
           this.typedWord.letters.unshift(this.squares[letterId])
+        }
+
+        if (this.typedWord.orientation === 'both') {
+          this.typedWord.orientation = 'vertical'
         }
       }
     }
@@ -233,7 +241,7 @@ export default class Board extends Vue {
     const newAdditionalWord = new WordModel()
     let letterId = lastLetterId
 
-    if (orientation === 'horizontal') {
+    if (orientation === 'horizontal' || orientation === 'both') {
       letterId = lastLetterId + 1
 
       for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].row === lastLetter.row && letterId <= this.squares.length - 1; letterId += 1) {
@@ -242,10 +250,14 @@ export default class Board extends Vue {
         } else {
           this.typedWord.letters.push(this.squares[letterId])
         }
+
+        if (this.typedWord.orientation === 'both') {
+          this.typedWord.orientation = 'horizontal'
+        }
       }
     }
 
-    if (orientation === 'vertical') {
+    if (orientation === 'vertical' || orientation === 'both') {
       letterId = lastLetterId + 15
 
       for (letterId; this.squares[letterId].letter !== '' && this.squares[letterId].column === lastLetter.column && letterId <= this.squares.length - 1; letterId += 15) {
@@ -253,6 +265,10 @@ export default class Board extends Vue {
           newAdditionalWord.letters.push(this.squares[letterId])
         } else {
           this.typedWord.letters.push(this.squares[letterId])
+        }
+
+        if (this.typedWord.orientation === 'both') {
+          this.typedWord.orientation = 'vertical'
         }
       }
     }
@@ -307,7 +323,7 @@ export default class Board extends Vue {
     const wordIsVertical = this.wordVertical()
     let wordOrientationOk = true
 
-    if (this.typedWord.letters.length > 0) {
+    if (this.typedWord.letters.length > 1) {
       if (wordIsHorizontal) {
         this.typedWord.orientation = 'horizontal'
       }
