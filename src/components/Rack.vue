@@ -39,6 +39,8 @@ export default class Rack extends Vue {
           this.currentTiles.push(this.tiles[randomIndex])
         }
       }
+
+      this.$emit('updateTiles', this.currentTiles)
     }
 }
 </script>

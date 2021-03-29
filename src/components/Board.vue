@@ -8,6 +8,7 @@
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
+import { Prop } from 'vue-property-decorator'
 import SquareModel from '@/models/Square'
 import WordModel from '@/models/Word'
 import doubleLetterSquares from '@/game-assets/board-squares/double-letter'
@@ -16,6 +17,7 @@ import tripleLetterSquares from '@/game-assets/board-squares/triple-letter'
 import tripleWordSquares from '@/game-assets/board-squares/triple-word'
 import Square from '@/components/Square.vue'
 import Scoreboard from '@/components/Scoreboard.vue'
+import TileModel from '@/models/Tile'
 
 @Component({
   components: {
@@ -24,6 +26,7 @@ import Scoreboard from '@/components/Scoreboard.vue'
   }
 })
 export default class Board extends Vue {
+  @Prop() currentTiles!: TileModel[]
   private squares: SquareModel[] = []
   private typedWord = new WordModel()
   private additionalWords: WordModel[] = []
@@ -48,6 +51,10 @@ export default class Board extends Vue {
 
     if (this.typedWord.letters.length > 1) {
       this.correctLettersOrder(this.typedWord)
+    }
+
+    if (!this.lettersMatchTiles()) {
+      wordOk = false
     }
 
     this.checkWordBeginning(this.typedWord.letters[0], this.typedWord.orientation)
@@ -77,6 +84,23 @@ export default class Board extends Vue {
 
     this.typedWord = new WordModel()
     this.additionalWords = []
+  }
+
+  lettersMatchTiles (): boolean {
+    const tiles: TileModel[] = JSON.parse(JSON.stringify(this.currentTiles))
+    let tileId = 0
+    let match = true
+
+    for (const letter of this.typedWord.letters) {
+      tileId = tiles.findIndex(tile => tile.letter.toUpperCase() === letter.letter.toUpperCase())
+      if (tileId >= 0) {
+        tiles.splice(tileId, 1)
+      } else {
+        match = false
+      }
+    }
+
+    return match
   }
 
   additionalWordsCheck (): void {
