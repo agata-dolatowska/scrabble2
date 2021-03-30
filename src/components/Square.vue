@@ -1,5 +1,5 @@
 <template lang="pug">
-  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="square.isDisabled" @input="changeLetter")
+  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="square.isDisabled" @input="changeLetter" @dragover="allowDrop($event)" @drop="dropTile($event)")
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -12,6 +12,16 @@ export default class Square extends Vue {
   @Prop({ required: true }) square!: SquareModel
 
   currentSquare = this.square
+
+  allowDrop (e: any): void {
+    e.preventDefault()
+  }
+
+  dropTile (e: any): void {
+    e.preventDefault()
+    this.currentSquare.letter = e.dataTransfer.getData('letter')
+    this.$emit('addLetterToWord', this.currentSquare)
+  }
 
   changeLetter () {
     if (/^[a-zA-Z]$/.test(this.currentSquare.letter)) {

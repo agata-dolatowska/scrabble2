@@ -1,5 +1,5 @@
 <template lang="pug">
-    .tile
+    .tile(draggable="true" @dragstart="startDrag($event, tile)")
         p.tile-letter {{ tile.letter }}
         p.tile-points {{ tile.points }}
 </template>
@@ -12,6 +12,10 @@ import TileModel from '@/models/Tile'
 @Component
 export default class Tile extends Vue {
     @Prop() tile!: TileModel
+
+    startDrag (e: any, tile: TileModel): void {
+      e.dataTransfer.setData('letter', tile.letter)
+    }
 }
 </script>
 
