@@ -6,8 +6,8 @@
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
+import { Prop } from 'vue-property-decorator'
 import Tile from '@/components/Tile.vue'
-import defaultTiles from '@/game-assets/tiles'
 import TileModel from '@/models/Tile'
 
 @Component({
@@ -16,32 +16,26 @@ import TileModel from '@/models/Tile'
   }
 })
 export default class Rack extends Vue {
-    private tiles: TileModel[] = [];
-    private currentTiles: TileModel[] = [];
+  @Prop() tiles!: TileModel[]
+  @Prop() currentTiles!: TileModel[]
 
-    mounted () {
-      this.createNewSetOfTiles()
-      this.chooseSevenRandomLetters()
-    }
+  mounted () {
+    this.chooseRandomLetters()
+  }
 
-    createNewSetOfTiles (): void {
-      this.tiles = JSON.parse(JSON.stringify(defaultTiles))
-    }
+  chooseRandomLetters (): void {
+    let randomIndex = 0
+    const newSetOfTiles: TileModel[] = JSON.parse(JSON.stringify(this.currentTiles))
 
-    chooseSevenRandomLetters (): void {
-      let randomIndex = 0
-
-      while (this.currentTiles.length <= 6) {
-        randomIndex = Math.floor(Math.random() * (this.tiles.length - 0))
-
-        if (this.tiles[randomIndex].amount > 0) {
-          this.tiles[randomIndex].amount -= 1
-          this.currentTiles.push(this.tiles[randomIndex])
-        }
+    while (newSetOfTiles.length <= 6) {
+      randomIndex = Math.floor(Math.random() * (this.tiles.length - 0))
+      if (this.tiles[randomIndex].amount > 0) {
+        newSetOfTiles.push(this.tiles[randomIndex])
       }
-
-      this.$emit('updateTiles', this.currentTiles)
     }
+
+    this.$emit('setNewTiles', newSetOfTiles)
+  }
 }
 </script>
 

@@ -3,7 +3,6 @@
     div.board-container
       <Square v-for="square in squares" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter"/>
     button(@click="checkWord" :disabled="typedWord.letters.length === 0") check word
-    <Scoreboard :savedWords="savedWords"/>
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -11,35 +10,28 @@ import Component from 'vue-class-component'
 import { Prop } from 'vue-property-decorator'
 import SquareModel from '@/models/Square'
 import WordModel from '@/models/Word'
-import doubleLetterSquares from '@/game-assets/board-squares/double-letter'
-import doubleWordSquares from '@/game-assets/board-squares/double-word'
-import tripleLetterSquares from '@/game-assets/board-squares/triple-letter'
-import tripleWordSquares from '@/game-assets/board-squares/triple-word'
 import Square from '@/components/Square.vue'
-import Scoreboard from '@/components/Scoreboard.vue'
 import TileModel from '@/models/Tile'
+import TurnModel from '@/models/Turn'
 
 @Component({
   components: {
-    Square,
-    Scoreboard
+    Square
   }
 })
 export default class Board extends Vue {
   @Prop() currentTiles!: TileModel[]
-  private squares: SquareModel[] = []
+  @Prop() squares!: SquareModel[]
   private typedWord = new WordModel()
   private additionalWords: WordModel[] = []
   private savedWords: WordModel[] = []
   private maxTypedLetters = 7
   private wordCount = 0
 
-  mounted () {
-    this.createSquares()
-  }
-
   checkWord () {
     let wordOk = true
+    const currentTurn = new TurnModel()
+    currentTurn.typedLetters = this.typedWord.letters
 
     if (!this.wordLengthCorrect()) {
       wordOk = false
@@ -51,6 +43,10 @@ export default class Board extends Vue {
 
     if (this.typedWord.letters.length > 1) {
       this.correctLettersOrder(this.typedWord)
+    }
+
+    if (this.typedWord.letters.length === 6) {
+      currentTurn.allLettersBonus = true
     }
 
     if (!this.lettersMatchTiles()) {
@@ -76,14 +72,17 @@ export default class Board extends Vue {
     this.additionalWordsCheck()
 
     if (wordOk) {
-      this.savedWords.push(this.typedWord, ...this.additionalWords)
+      currentTurn.savedWords.push(this.typedWord, ...this.additionalWords)
+      this.$emit('addTurn', currentTurn)
       this.wordCount++
+      this.$emit('updateTiles', currentTurn.typedLetters)
     } else {
       this.removeWordFromBoard()
     }
 
     this.typedWord = new WordModel()
     this.additionalWords = []
+    this.savedWords = []
   }
 
   lettersMatchTiles (): boolean {
@@ -394,32 +393,6 @@ export default class Board extends Vue {
     }
 
     return isVertical
-  }
-
-  createSquares (): void {
-    const allBonusSquares: {[key: string]: string[]} = {
-      'double-letter': doubleLetterSquares,
-      'double-word': doubleWordSquares,
-      'triple-letter': tripleLetterSquares,
-      'triple-word': tripleWordSquares
-    }
-    let squareWithBonusId: number
-
-    for (let rowNumber = 1; rowNumber <= 15; rowNumber += 1) {
-      for (let columnNumber = 1; columnNumber <= 15; columnNumber += 1) {
-        this.squares.push(new SquareModel(`${(rowNumber + 9).toString(36)}${columnNumber}`, rowNumber, columnNumber))
-      }
-    }
-
-    for (const bonusType in allBonusSquares) {
-      for (const bonusSquare in allBonusSquares[bonusType]) {
-        squareWithBonusId = this.squares.findIndex(square => square.id === allBonusSquares[bonusType][bonusSquare])
-
-        if (squareWithBonusId >= 0) {
-          this.squares[squareWithBonusId].bonus = bonusType
-        }
-      }
-    }
   }
 
   addLetterToWord (newLetter: SquareModel): void {

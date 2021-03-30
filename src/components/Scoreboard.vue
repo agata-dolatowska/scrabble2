@@ -2,14 +2,14 @@
     div
         table
             tbody
-                tr(v-for="(word, i) in savedWords" :key="i")
-                    <ScoreboardItem :word="word"/>
+                tr(v-for="(turn, i) in scores"  :key="i")
+                  <ScoreboardItem v-for="word in turn.savedWords" :word="word"/>
 </template>
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
 import { Prop } from 'vue-property-decorator'
-import WordModel from '@/models/Word'
+import Turn from '@/models/Turn'
 import ScoreboardItem from '@/components/ScoreboardItem.vue'
 
 @Component({
@@ -18,6 +18,6 @@ import ScoreboardItem from '@/components/ScoreboardItem.vue'
   }
 })
 export default class Scoreboard extends Vue {
-    @Prop({ required: true }) savedWords!: WordModel[]
+    @Prop({ required: true }) scores!: Turn[]
 }
 </script>
