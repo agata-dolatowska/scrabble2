@@ -2,7 +2,7 @@
   div
    <Board :squares="squares" :currentTiles="currentTiles" @addTurn="addTurn" @updateTiles="updateTiles"/>
    <Scoreboard :scores="scores" />
-   <Rack :key="tilesUpdate" v-if="tiles.length > 0" :tiles="tiles" :currentTiles="currentTiles" @setNewTiles="setNewTiles"/>
+   <Rack :key="tilesUpdate" v-if="tiles.length > 0" :tiles="tiles" :currentTiles="currentTiles" @setNewTiles="setNewTiles" @returnExchangedTiles="returnExchangedTiles"/>
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -102,6 +102,16 @@ export default class Game extends Vue {
     }
 
     this.tilesUpdate++
+  }
+
+  returnExchangedTiles (tilesToAdd: TileModel[]): void {
+    let tileId = 0
+
+    for (const tileToAdd of tilesToAdd) {
+      tileId = this.tiles.findIndex(tile => tile.letter.toUpperCase() === tileToAdd.letter.toUpperCase())
+
+      this.tiles[tileId].amount++
+    }
   }
 }
 </script>
