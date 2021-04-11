@@ -1,7 +1,7 @@
 <template lang="pug">
   div
     div.board-container
-      <Square v-for="square in squares" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter"/>
+      <Square v-for="(square, i) in squares" :ref="'square' + i" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter" />
     button(@click="checkWord" :disabled="typedWord.letters.length === 0") check word
 </template>
 <script lang="ts">
@@ -397,6 +397,8 @@ export default class Board extends Vue {
 
   addLetterToWord (newLetter: SquareModel): void {
     const letterId = this.typedWord.letters.findIndex(letter => letter.id === newLetter.id)
+    const squareId = this.squares.findIndex(square => square.id === newLetter.id)
+    let nextSquareId = ''
 
     if (letterId >= 0) {
       this.typedWord.letters[letterId] = newLetter
@@ -404,6 +406,21 @@ export default class Board extends Vue {
 
     if (letterId === -1) {
       this.typedWord.letters.push(newLetter)
+    }
+
+    if (this.wordOrientationCorrect() && this.typedWord.orientation !== 'both') {
+      if (this.typedWord.orientation === 'horizontal' && newLetter.column < 15) {
+        nextSquareId = `square${squareId + 1}`
+        const squareElement = this.$refs[nextSquareId] as Board[]
+        const nextSquareItem = squareElement[0].$el as HTMLElement
+        nextSquareItem.focus()
+      }
+      if (this.typedWord.orientation === 'vertical' && newLetter.row < 15) {
+        nextSquareId = `square${squareId + 15}`
+        const squareElement = this.$refs[nextSquareId] as Board[]
+        const nextSquareItem = squareElement[0].$el as HTMLElement
+        nextSquareItem.focus()
+      }
     }
   }
 
