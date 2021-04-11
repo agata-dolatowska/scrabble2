@@ -3,7 +3,7 @@
     div.board-container
       <Square v-for="(square, i) in squares" :ref="'square' + i" :key="square.id" :square="square" @addLetterToWord="addLetterToWord" @removeEmptyLetter="removeEmptyLetter" />
     button(@click="checkWord" :disabled="typedWord.letters.length === 0") check word
-    <ErrorMessage v-if="errorOpen" :message="errorMessage" />
+    <ErrorMessage v-if="errorOpen" :message="errorMessage" @close="errorOpen = false"/>
 </template>
 <script lang="ts">
 import Vue from 'vue'
