@@ -73,7 +73,12 @@ export default class Game extends Vue {
   }
 
   createNewSetOfTiles (): void {
-    this.tiles = JSON.parse(JSON.stringify(defaultTiles))
+    let newTile: TileModel
+
+    for (const tile of defaultTiles) {
+      newTile = new TileModel(tile.letter, tile.amount, tile.points)
+      this.tiles.push(newTile)
+    }
   }
 
   setNewTiles (tiles: TileModel[]): void {
