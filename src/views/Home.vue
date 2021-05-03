@@ -34,7 +34,32 @@ export default class Game extends Vue {
   private tilesUpdate = 0
 
   mounted () {
-    this.startNewGame()
+    if (localStorage.getItem('scrabble') !== null) {
+      this.startSavedGame()
+    } else {
+      this.startNewGame()
+    }
+
+    window.onbeforeunload = () => this.saveGame()
+  }
+
+  saveGame () {
+    localStorage.setItem('scrabble', JSON.stringify({
+      squares: this.squares,
+      currentTiles: this.currentTiles,
+      tiles: this.tiles,
+      scores: this.scores
+    })
+    )
+  }
+
+  startSavedGame () {
+    const savedGame = JSON.parse(localStorage.getItem('scrabble') as string)
+
+    this.squares = savedGame.squares
+    this.currentTiles = savedGame.currentTiles
+    this.tiles = savedGame.tiles
+    this.scores = savedGame.scores
   }
 
   startNewGame (): void {
