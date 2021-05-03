@@ -3,6 +3,7 @@
    <Board :squares="squares" :currentTiles="currentTiles" @addTurn="addTurn" @updateTiles="updateTiles"/>
    <Scoreboard :scores="scores" />
    <Rack :key="tilesUpdate" v-if="tiles.length > 0" :tiles="tiles" :currentTiles="currentTiles" @setNewTiles="setNewTiles" @returnExchangedTiles="returnExchangedTiles"/>
+   <button v-if="gameSaved" @click="startNewGame">Start new game</button>
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -33,8 +34,12 @@ export default class Game extends Vue {
   private scores: TurnModel[] = []
   private tilesUpdate = 0
 
+  get gameSaved () {
+    return localStorage.getItem('scrabble') !== null
+  }
+
   mounted () {
-    if (localStorage.getItem('scrabble') !== null) {
+    if (this.gameSaved) {
       this.startSavedGame()
     } else {
       this.startNewGame()
@@ -63,6 +68,10 @@ export default class Game extends Vue {
   }
 
   startNewGame (): void {
+    this.squares = []
+    this.tiles = []
+    this.scores = []
+    this.currentTiles = []
     this.createSquares()
     this.createNewSetOfTiles()
   }
