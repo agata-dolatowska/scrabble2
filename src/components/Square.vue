@@ -14,7 +14,11 @@ export default class Square extends Vue {
   currentSquare = this.square
 
   detectBackspace (e: KeyboardEvent): void {
-    if ((e.key).toLowerCase() === 'backspace') {
+    if (!this.square.canBeRemoved) {
+      e.preventDefault()
+    }
+
+    if ((e.key).toLowerCase() === 'backspace' && this.square.canBeRemoved) {
       this.$emit('goToPreviousSquare', this.currentSquare)
     }
   }

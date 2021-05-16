@@ -72,6 +72,7 @@ export default class Board extends Vue {
     this.additionalWordsCheck()
 
     if (wordOk) {
+      this.blockDelete()
       currentTurn.savedWords.push(this.typedWord, ...this.additionalWords)
       this.$emit('addTurn', currentTurn)
       this.wordCount++
@@ -83,6 +84,20 @@ export default class Board extends Vue {
     this.typedWord = new WordModel()
     this.additionalWords = []
     this.savedWords = []
+  }
+
+  blockDelete (): void {
+    for (const letter of this.typedWord.letters) {
+      letter.canBeRemoved = false
+    }
+
+    if (this.additionalWords.length > 0) {
+      for (const word of this.additionalWords) {
+        for (const letter of word.letters) {
+          letter.canBeRemoved = false
+        }
+      }
+    }
   }
 
   lettersMatchTiles (): boolean {
