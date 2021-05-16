@@ -1,5 +1,5 @@
 <template lang="pug">
-  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="square.isDisabled" @input="changeLetter" @dragover="allowDrop($event)" @drop="dropTile($event)")
+  input(type="text" class="square" v-model="currentSquare.letter" :class="[square.bonus]" :disabled="square.isDisabled" @input="changeLetter" @dragover="allowDrop($event)" @drop="dropTile($event)" @keydown="detectBackspace($event)")
 </template>
 <script lang="ts">
 import Vue from 'vue'
@@ -12,6 +12,12 @@ export default class Square extends Vue {
   @Prop({ required: true }) square!: SquareModel
 
   currentSquare = this.square
+
+  detectBackspace (e: KeyboardEvent): void {
+    if ((e.key).toLowerCase() === 'backspace') {
+      this.$emit('goToPreviousSquare', this.currentSquare)
+    }
+  }
 
   allowDrop (e: any): void {
     e.preventDefault()
